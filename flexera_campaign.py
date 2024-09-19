@@ -44,6 +44,7 @@ def main(
         domain: str,
         username: str,
         password: str,
+        flexera_id: str,
         proxies: Optional[dict] = None,
 ) -> Generator[dict, None, None]:
     session = Session()
@@ -55,7 +56,7 @@ def main(
     session.headers = headers
     session.proxies = proxies
 
-    yield from create_campaign(session=session, domain=domain)
+    yield from create_campaign(session=session, domain=domain, flexera_id=flexera_id)
 
 
 if __name__ == '__main__':
@@ -65,7 +66,7 @@ if __name__ == '__main__':
         default=None,
         type=str,
         required=True,
-        help='The URL for your flexera server',
+        help='The URL for your Flexera server',
     )
     parser.add_argument(
         '--username',
@@ -80,6 +81,13 @@ if __name__ == '__main__':
         type=str,
         required=True,
         help='The password for your Flexera account',
+    )
+    parser.add_argument(
+        '--flexera_id',
+        default=None,
+        type=str,
+        required=True,
+        help='The Flexera ID for the software package',
     )
     parser.add_argument(
         '--proxies',
@@ -101,6 +109,7 @@ if __name__ == '__main__':
         domain=args.domain,
         username=args.username,
         password=args.password,
+        flexera_id=args.flexera_id,
         proxies=proxies,
     ):
         print(dumps(result, indent=4))
