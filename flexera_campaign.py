@@ -123,7 +123,9 @@ def main(
     session.headers = headers
     session.proxies = proxies
 
-    yield from create_campaign(session=session, domain=domain, flexera_id=flexera_id)
+    create_retire_campaign_soap(session=session, domain=domain, flexera_id=flexera_id)
+    # modify_retire_campaign_rest(session=session, domain=domain, flexera_id=flexera_id)
+    # yield from create_campaign(session=session, domain=domain, flexera_id=flexera_id)
 
 
 if __name__ == '__main__':
