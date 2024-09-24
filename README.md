@@ -16,11 +16,12 @@ options:
   --username USERNAME           The user name for your Flexera account
   --password PASSWORD           The password for your Flexera account
   --flexera_id FLEXERA_ID       The Flexera ID for the software package
+  --group_id GROUP ID           The AD Group ID for the software campaign policy
   --proxies PROXIES             JSON structure specifying 'http' and 'https' proxy URLs
 
 ```
 
 # example
 ```
-$ python flexera_campaign.py --domain 'https://my_flexera.domain.com/' --username USERNAME --password PASSWORD --flexera_id 'arl://SOME_ID'
+$ python flexera_campaign.py --domain 'https://my_flexera.domain.com/' --username USERNAME --password PASSWORD --flexera_id 'arl://SOME_ID'  --group_id SOME_GROUP_ID
 ```
