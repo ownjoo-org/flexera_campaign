@@ -3,7 +3,7 @@ import logging
 import sys
 
 from json import loads, dumps
-from typing import Optional, Generator
+from typing import Optional
 
 import http.client
 
@@ -41,9 +41,6 @@ def modify_retire_campaign_rest(
             },
         ]
         resp_campaign: Response = session.post(
-            headers={
-                'Content-Type': 'application/json',
-            },
             url=url,
             params={
                 'flexeraid': flexera_id,
@@ -107,6 +104,7 @@ def main(
 
     headers: dict = {
         'Accept': 'application/json',
+        'Content-Type': 'application/json',
     }
     session.headers = headers
     session.proxies = proxies
