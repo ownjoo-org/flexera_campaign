@@ -8,6 +8,7 @@ from typing import Optional, Generator
 import http.client
 
 from requests import HTTPError, Session, Response
+from requests_ntlm import HttpNtlmAuth
 from zeep import Client, Transport, xsd
 
 http.client.HTTPConnection.debuglevel = 0  # 0 for off, >0 for on
@@ -46,7 +47,7 @@ def modify_retire_campaign_rest(
         )
         print(resp_campaign.text)
     except HTTPError as http_error:
-        msg: str = f'''WSDL RESPONSE: {http_error}:
+        msg: str = f'''REST RESPONSE: {http_error}:
         STATUS: {http_error.response.status_code}
         HEADERS: {http_error.request.headers}
         BODY: {http_error.request.body}'''
@@ -79,9 +80,9 @@ def create_retire_campaign_soap(
         logger.exception(f'Error getting WSDL: {exc_wsdl}')
         raise exc_wsdl
 
-    client = Client(wsdl, transport=Transport(session=session._session))
+    client = Client(wsdl, transport=Transport(session=session))
     resp_campaign: xsd.CompoundValue = client.service.AddFlexeraIdForRetireCampaign(flexera_id)
-    logger.debug(f'CAMPAIGN: {resp_campaign}')
+    logger.debug(f'\n\n\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n\n\n')
 
 
 def create_campaign(
@@ -115,13 +116,14 @@ def main(
         proxies: Optional[dict] = None,
 ) -> Generator[dict, None, None]:
     session = Session()
-    session.auth = (username, password)
+    session.auth = HttpNtlmAuth(username, password)
 
     headers: dict = {
         'Accept': 'application/json',
     }
     session.headers = headers
     session.proxies = proxies
+    session.verify = False
 
     create_retire_campaign_soap(session=session, domain=domain, flexera_id=flexera_id)
     # modify_retire_campaign_rest(session=session, domain=domain, flexera_id=flexera_id)
@@ -174,13 +176,11 @@ if __name__ == '__main__':
         except Exception as exc_json:
             print(f'WARNING: failure parsing proxies: {exc_json}: proxies provided: {proxies}')
 
-    for result in main(
+    result = main(
         domain=args.domain,
         username=args.username,
         password=args.password,
         flexera_id=args.flexera_id,
         proxies=proxies,
-    ):
-        print(dumps(result, indent=4))
-    else:
-        print('End of results')
+    )
+    print(result)
