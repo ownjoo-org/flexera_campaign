@@ -13,7 +13,7 @@ from zeep import Client, Transport, xsd
 
 http.client.HTTPConnection.debuglevel = 0  # 0 for off, >0 for on
 
-log_level: int = logging.ERROR
+log_level: int = logging.INFO
 logging.basicConfig()
 logger = logging.getLogger("requests.packages.urllib3")
 logger.setLevel(log_level)
@@ -25,7 +25,7 @@ def modify_retire_campaign_rest(
         domain: str,
         flexera_id: str = '',
         group_id: str = '',
-) -> None:
+) -> str:
     try:
         url: str = f'{domain}/esd/api/Campaigns'
         data: list = [
@@ -41,17 +41,24 @@ def modify_retire_campaign_rest(
             },
         ]
         resp_campaign: Response = session.post(
+            headers={
+                'Content-Type': 'application/json',
+            },
             url=url,
-            params={'flexeraid': flexera_id},
-            data=data,
+            params={
+                'flexeraid': flexera_id,
+                'CampaignType': 3,
+            },
+            json=data,
         )
-        print(resp_campaign.text)
+        return resp_campaign.text
+
     except HTTPError as http_error:
-        msg: str = f'''REST RESPONSE: {http_error}:
-        STATUS: {http_error.response.status_code}
-        HEADERS: {http_error.request.headers}
-        BODY: {http_error.request.body}'''
-        print(msg, file=sys.stderr)
+        # msg: str = f'''REST RESPONSE: {http_error}:
+        # STATUS: {http_error.response.status_code}
+        # HEADERS: {http_error.request.headers}
+        # BODY: {http_error.request.body}'''
+        # print(msg, file=sys.stderr)
         logger.exception(http_error)
     except Exception as exc_campaign_rest:
         logger.exception(exc_campaign_rest)
@@ -61,7 +68,7 @@ def create_retire_campaign_soap(
         session: Session,
         domain: str,
         flexera_id: str = '',
-) -> None:
+) -> xsd.CompoundValue:
     url: str = f'{domain}/esd/ws/integration.asmx'
     wsdl: Optional[str] = None
     try:
@@ -84,28 +91,7 @@ def create_retire_campaign_soap(
     resp_campaign: xsd.CompoundValue = client.service.AddFlexeraIdForRetireCampaign(flexera_id)
     logger.debug(f'\n\n\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n\n\n')
 
-
-def create_campaign(
-        session: Session,
-        domain: str,
-        flexera_id: str,
-) -> Generator[dict, None, None]:
-    params: dict = {
-        'flexera_id': flexera_id,
-    }
-    try:
-        resp_campaign: Response = session.get(
-            url=domain,
-            params=params,
-        )
-        resp_campaign.raise_for_status()
-        data: dict = resp_campaign.json()
-        devices: list = data.get('data')
-        yield from devices
-    except HTTPError as exc_http:
-        logger.error(f'{exc_http}: {exc_http.response.request.headers}')
-    except Exception as exc_dev:
-        logger.error(exc_dev)
+    return resp_campaign
 
 
 def main(
@@ -113,8 +99,9 @@ def main(
         username: str,
         password: str,
         flexera_id: str,
+        group_id: str,
         proxies: Optional[dict] = None,
-) -> Generator[dict, None, None]:
+) -> list:
     session = Session()
     session.auth = HttpNtlmAuth(username, password)
 
@@ -125,9 +112,10 @@ def main(
     session.proxies = proxies
     session.verify = False
 
-    create_retire_campaign_soap(session=session, domain=domain, flexera_id=flexera_id)
-    # modify_retire_campaign_rest(session=session, domain=domain, flexera_id=flexera_id)
-    # yield from create_campaign(session=session, domain=domain, flexera_id=flexera_id)
+    resp_campaign = create_retire_campaign_soap(session=session, domain=domain, flexera_id=flexera_id)
+    resp_modify = modify_retire_campaign_rest(session=session, domain=domain, flexera_id=flexera_id, group_id=group_id)
+
+    return [resp_campaign, resp_modify]
 
 
 if __name__ == '__main__':
@@ -161,6 +149,13 @@ if __name__ == '__main__':
         help='The Flexera ID for the software package',
     )
     parser.add_argument(
+        '--group_id',
+        default=None,
+        type=str,
+        required=True,
+        help='The AD Group ID for the software campaign policy',
+    )
+    parser.add_argument(
         '--proxies',
         type=str,
         required=False,
@@ -176,11 +171,12 @@ if __name__ == '__main__':
         except Exception as exc_json:
             print(f'WARNING: failure parsing proxies: {exc_json}: proxies provided: {proxies}')
 
-    result = main(
+    for result in main(
         domain=args.domain,
         username=args.username,
         password=args.password,
         flexera_id=args.flexera_id,
+        group_id=args.group_id,
         proxies=proxies,
-    )
-    print(result)
+    ):
+        print(result)
