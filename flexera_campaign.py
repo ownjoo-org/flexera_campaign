@@ -1,7 +1,7 @@
 import http.client
 from argparse import ArgumentParser, Namespace
 from json import dumps, loads
-from logging import getLogger, WARNING, DEBUG, NOTSET
+from logging import DEBUG, NOTSET, WARNING, getLogger
 from logging.config import dictConfig
 from typing import Optional
 
