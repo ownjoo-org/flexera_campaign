@@ -1,7 +1,7 @@
-import argparse
 import http.client
+from argparse import ArgumentParser, Namespace
 from json import dumps, loads
-from logging import DEBUG, ERROR, getLogger
+from logging import getLogger, WARNING
 from logging.config import dictConfig
 from typing import Optional
 
@@ -12,7 +12,7 @@ from zeep import Client, Transport, xsd
 global logger
 
 
-def configure_logger(log_level: int = ERROR) -> None:
+def configure_logger(log_level: int = WARNING) -> None:
     global logger
     http.client.HTTPConnection.debuglevel = log_level or 0  # 0 for off, >0 for on
     dictConfig(
@@ -21,7 +21,7 @@ def configure_logger(log_level: int = ERROR) -> None:
             'disable_existing_loggers': False,
             'formatters': {
                 'default': {
-                    'format': 'DEFAULT: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                    'format': 'MAIN: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
                 },
                 'zeep': {
                     'format': 'ZEEP: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
@@ -141,13 +141,13 @@ def create_retire_campaign_soap(
         logger.debug(msg=msg)
         logger.exception(http_error_wsdl)
     except Exception as exc_wsdl:
-        logger.exception(f'Error getting WSDL: {type(exc_wsdl)}: {exc_wsdl}')
+        logger.exception(f'Error getting WSDL: type: {type(exc_wsdl)}: message: {exc_wsdl}')
         raise exc_wsdl
 
     try:
         client = Client(wsdl, transport=Transport(session=session))
         resp_campaign: xsd.CompoundValue = client.service.AddFlexeraIdForRetireCampaign(flexera_id)
-        logger.debug(f'\n\n\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n\n\n')
+        logger.debug(f'\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n')
         return resp_campaign
     except Exception as exc_campaign_rest:
         logger.exception(exc_campaign_rest)
@@ -180,10 +180,8 @@ def main(
     return [resp_campaign, resp_modify]
 
 
-if __name__ == '__main__':
-    global logger
-    configure_logger(DEBUG)
-    parser = argparse.ArgumentParser()
+def get_cli_args() -> Namespace:
+    parser = ArgumentParser()
     parser.add_argument(
         '--domain',
         default=None,
@@ -232,7 +230,13 @@ if __name__ == '__main__':
         help='Log level: default is 50. Greater than 0 enables some logging.  10 or more is DEBUG.',
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    global logger
+    args: Namespace = get_cli_args()
+    configure_logger(args.log_level)
 
     proxies: Optional[dict] = None
     if proxies:
@@ -241,8 +245,8 @@ if __name__ == '__main__':
         except Exception as exc_json:
             logger.warning(f'WARNING: failure parsing proxies: {exc_json}: proxies provided: {proxies}')
 
-    configure_logger(args.log_level)
-    print(f'EXECUTION: begin')
+    msg: str = '\nEXECUTION: {stage} ******************************************************************************\n'
+    logger.critical(msg.format(stage='begin'))
     try:
         for result in main(
             domain=args.domain,
@@ -258,4 +262,4 @@ if __name__ == '__main__':
                 logger.error(f'RESULT EXCEPTION: {exc}')
     except Exception as exc_loop:
         logger.error(f'MAIN ERROR: {exc_loop}')
-    print(f'EXECUTION: end')
+    logger.critical(msg.format(stage='end'))
