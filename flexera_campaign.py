@@ -5,11 +5,15 @@ from logging import getLogger, WARNING
 from logging.config import dictConfig
 from typing import Optional
 
+import urllib3
 from requests import HTTPError, Response, Session
 from requests_ntlm import HttpNtlmAuth
 from zeep import Client, Transport, xsd
 
 global logger
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def configure_logging(log_level: int = WARNING) -> None:
