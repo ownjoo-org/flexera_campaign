@@ -183,6 +183,12 @@ def main(
 def get_cli_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument(
+        '--proxies',
+        type=str,
+        required=False,
+        help="JSON structure specifying 'http' and 'https' proxy URLs",
+    )
+    parser.add_argument(
         '--domain',
         default=None,
         type=str,
@@ -218,12 +224,6 @@ def get_cli_args() -> Namespace:
         help='The AD Group ID for the software campaign policy',
     )
     parser.add_argument(
-        '--proxies',
-        type=str,
-        required=False,
-        help="JSON structure specifying 'http' and 'https' proxy URLs",
-    )
-    parser.add_argument(
         '--log_level',
         default=50,
         type=int,
@@ -235,6 +235,7 @@ def get_cli_args() -> Namespace:
 
 if __name__ == '__main__':
     global logger
+    msg: str = '\nEXECUTION: {stage} ******************************************************************************\n'
     args: Namespace = get_cli_args()
     configure_logger(args.log_level)
 
@@ -243,9 +244,8 @@ if __name__ == '__main__':
         try:
             proxies: dict = loads(args.proxies)
         except Exception as exc_json:
-            logger.warning(f'WARNING: failure parsing proxies: {exc_json}: proxies provided: {proxies}')
+            logger.warning(f'FAILURE PARSING PROXIES: {exc_json}: proxies provided: {proxies}')
 
-    msg: str = '\nEXECUTION: {stage} ******************************************************************************\n'
     logger.critical(msg.format(stage='begin'))
     try:
         for result in main(

@@ -12,13 +12,13 @@ usage: flexera_campaign.py [-h] --domain DOMAIN --username USERNAME --password P
 
 options:
   -h, --help                    show this help message and exit
+  --proxies PROXIES             JSON structure specifying 'http' and 'https' proxy URLs
   --domain DOMAIN               The URL for your Flexera server
   --username USERNAME           The user name for your Flexera account
   --password PASSWORD           The password for your Flexera account
   --flexera_id FLEXERA_ID       The Flexera ID for the software package
   --group_id GROUP ID           The AD Group ID for the software campaign policy
-  --proxies PROXIES             JSON structure specifying 'http' and 'https' proxy URLs
-
+  --log_level LOG_LEVEL         Log level: default is 50. Greater than 0 enables some logging. 10 or more is DEBUG.
 ```
 
 # example
