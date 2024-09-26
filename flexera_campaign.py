@@ -21,31 +21,13 @@ def configure_logging(log_level: int = WARNING) -> None:
             'disable_existing_loggers': False,
             'formatters': {
                 'default': {
-                    'format': 'LOG_DEFAULT: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                    'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
                 },
-                'zeep': {
-                    'format': 'LOG_ZEEP: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
-                },
-                'urllib': {
-                    'format': 'LOG_URLLIB: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
-                }
             },
             'handlers': {
                 'default': {
                     'level': log_level,
                     'formatter': 'default',
-                    'class': 'logging.StreamHandler',
-                    'stream': 'ext://sys.stdout',  # Default is stderr
-                },
-                'zeep': {
-                    'level': log_level,
-                    'formatter': 'zeep',
-                    'class': 'logging.StreamHandler',
-                    'stream': 'ext://sys.stdout',  # Default is stderr
-                },
-                'urllib': {
-                    'level': log_level,
-                    'formatter': 'urllib',
                     'class': 'logging.StreamHandler',
                     'stream': 'ext://sys.stdout',  # Default is stderr
                 },
@@ -58,20 +40,6 @@ def configure_logging(log_level: int = WARNING) -> None:
                         'default',
                     ],
                 },
-                'zeep.transports': {
-                    'level': log_level,
-                    'propagate': True,
-                    'handlers': [
-                        'zeep',
-                    ],
-                },
-                "requests.packages.urllib3": {
-                    'level': log_level,
-                    'propagate': True,
-                    'handlers': [
-                        'urllib',
-                    ],
-                }
             }
         }
     )
