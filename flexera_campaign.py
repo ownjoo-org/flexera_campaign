@@ -18,7 +18,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def configure_logging(log_level: int = WARNING) -> None:
     global logger
-    http.client.HTTPConnection.debuglevel = log_level or 0  # 0 for off, >0 for on
+    http.client.HTTPConnection.debuglevel = 1 if log_level == 0 else 0  # 0 for off, >0 for on
     dictConfig(
         {
             'version': 1,
