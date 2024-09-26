@@ -8,7 +8,7 @@ your own static analysis and supply chain testing before use.  Many libraries ar
 # usage
 ```
 $ python flexera_campaign.py -h
-usage: flexera_campaign.py [-h] --domain DOMAIN --username USERNAME --password PASSWORD --flexera_id FLEXERA_ID [--proxies PROXIES]
+usage: flexera_campaign.py [-h] --domain DOMAIN --username USERNAME --password PASSWORD --flexera_id FLEXERA_ID [--proxies PROXIES] [--log_level LOG_LEVEL]
 
 options:
   -h, --help                    show this help message and exit
