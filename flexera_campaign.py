@@ -107,7 +107,6 @@ def create_retire_campaign_soap(
         return resp_campaign
     except Exception as exc_campaign_rest:
         logger.exception(exc_campaign_rest)
-        logger.error(f'{type(exc_campaign_rest)}')
 
 
 def main(
@@ -216,6 +215,7 @@ if __name__ == '__main__':
                 logger.info(f'    RESULT: {result}')
             except Exception as exc:
                 logger.error(f'    RESULT EXCEPTION: {exc}')
+                raise
     except Exception as exc_loop:
         logger.error(f'    MAIN ERROR: {exc_loop}')
     logger.critical(msg.format(stage='end'))
