@@ -1,23 +1,81 @@
 import argparse
-import logging
-import sys
-
-from json import loads, dumps
+import http.client
+from json import dumps, loads
+from logging import DEBUG, ERROR, getLogger
+from logging.config import dictConfig
 from typing import Optional
 
-import http.client
-
-from requests import HTTPError, Session, Response
+from requests import HTTPError, Response, Session
 from requests_ntlm import HttpNtlmAuth
 from zeep import Client, Transport, xsd
 
-http.client.HTTPConnection.debuglevel = 0  # 0 for off, >0 for on
+global logger
 
-log_level: int = logging.INFO
-logging.basicConfig()
-logger = logging.getLogger("requests.packages.urllib3")
-logger.setLevel(log_level)
-logger.propagate = True
+
+def configure_logger(log_level: int = ERROR) -> None:
+    global logger
+    http.client.HTTPConnection.debuglevel = log_level or 0  # 0 for off, >0 for on
+    dictConfig(
+        {
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {
+                'default': {
+                    'format': 'DEFAULT: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                },
+                'zeep': {
+                    'format': 'ZEEP: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                },
+                'urllib': {
+                    'format': 'URLLIB: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                }
+            },
+            'handlers': {
+                'default': {
+                    'level': log_level,
+                    'formatter': 'default',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stdout',  # Default is stderr
+                },
+                'zeep': {
+                    'level': log_level,
+                    'formatter': 'zeep',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stdout',  # Default is stderr
+                },
+                'urllib': {
+                    'level': log_level,
+                    'formatter': 'urllib',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stdout',  # Default is stderr
+                },
+            },
+            'loggers': {
+                '': {  # root logger
+                    'level': log_level,
+                    'propagate': True,
+                    'handlers': [
+                        'default',
+                    ],
+                },
+                'zeep.transports': {
+                    'level': log_level,
+                    'propagate': True,
+                    'handlers': [
+                        'zeep',
+                    ],
+                },
+                "requests.packages.urllib3": {
+                    'level': log_level,
+                    'propagate': True,
+                    'handlers': [
+                        'urllib',
+                    ],
+                }
+            }
+        }
+    )
+    logger = getLogger(__name__)
 
 
 def modify_retire_campaign_rest(
@@ -26,6 +84,7 @@ def modify_retire_campaign_rest(
         flexera_id: str = '',
         group_id: str = '',
 ) -> str:
+    global logger
     try:
         url: str = f'{domain}/esd/api/Campaigns'
         data: list = [
@@ -56,9 +115,9 @@ def modify_retire_campaign_rest(
         # HEADERS: {http_error.request.headers}
         # BODY: {http_error.request.body}'''
         # print(msg, file=sys.stderr)
-        logger.exception(http_error)
+        logger.exception(f'HTTP ERROR: {http_error}')
     except Exception as exc_campaign_rest:
-        logger.exception(exc_campaign_rest)
+        logger.exception(f'Exception: {exc_campaign_rest}')
 
 
 def create_retire_campaign_soap(
@@ -66,6 +125,7 @@ def create_retire_campaign_soap(
         domain: str,
         flexera_id: str = '',
 ) -> xsd.CompoundValue:
+    global logger
     url: str = f'{domain}/esd/ws/integration.asmx'
     wsdl: Optional[str] = None
     try:
@@ -74,21 +134,24 @@ def create_retire_campaign_soap(
         wsdl: str = resp_wsdl.text
         logger.debug(f'WSDL: {wsdl}')
     except HTTPError as http_error_wsdl:
-        msg: str = f'''WSDL RESPONSE: {http_error_wsdl}:
+        msg: str = f'''WSDL ERROR: {http_error_wsdl}:
         STATUS: {http_error_wsdl.response.status_code}
         HEADERS: {http_error_wsdl.request.headers}
         BODY: {http_error_wsdl.request.body}'''
-        print(msg, file=sys.stderr)
+        logger.debug(msg=msg)
         logger.exception(http_error_wsdl)
     except Exception as exc_wsdl:
-        logger.exception(f'Error getting WSDL: {exc_wsdl}')
+        logger.exception(f'Error getting WSDL: {type(exc_wsdl)}: {exc_wsdl}')
         raise exc_wsdl
 
-    client = Client(wsdl, transport=Transport(session=session))
-    resp_campaign: xsd.CompoundValue = client.service.AddFlexeraIdForRetireCampaign(flexera_id)
-    logger.debug(f'\n\n\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n\n\n')
-
-    return resp_campaign
+    try:
+        client = Client(wsdl, transport=Transport(session=session))
+        resp_campaign: xsd.CompoundValue = client.service.AddFlexeraIdForRetireCampaign(flexera_id)
+        logger.debug(f'\n\n\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n\n\n')
+        return resp_campaign
+    except Exception as exc_campaign_rest:
+        logger.exception(exc_campaign_rest)
+        logger.error(f'{type(exc_campaign_rest)}')
 
 
 def main(
@@ -99,6 +162,7 @@ def main(
         group_id: str,
         proxies: Optional[dict] = None,
 ) -> list:
+    global logger
     session = Session()
     session.auth = HttpNtlmAuth(username, password)
 
@@ -117,6 +181,8 @@ def main(
 
 
 if __name__ == '__main__':
+    global logger
+    configure_logger(DEBUG)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--domain',
@@ -159,6 +225,12 @@ if __name__ == '__main__':
         required=False,
         help="JSON structure specifying 'http' and 'https' proxy URLs",
     )
+    parser.add_argument(
+        '--log_level',
+        default=50,
+        type=int,
+        help='Log level: default is 50. Greater than 0 enables some logging.  10 or more is DEBUG.',
+    )
 
     args = parser.parse_args()
 
@@ -167,14 +239,23 @@ if __name__ == '__main__':
         try:
             proxies: dict = loads(args.proxies)
         except Exception as exc_json:
-            print(f'WARNING: failure parsing proxies: {exc_json}: proxies provided: {proxies}')
+            logger.warning(f'WARNING: failure parsing proxies: {exc_json}: proxies provided: {proxies}')
 
-    for result in main(
-        domain=args.domain,
-        username=args.username,
-        password=args.password,
-        flexera_id=args.flexera_id,
-        group_id=args.group_id,
-        proxies=proxies,
-    ):
-        print(result)
+    configure_logger(args.log_level)
+    print(f'EXECUTION: begin')
+    try:
+        for result in main(
+            domain=args.domain,
+            username=args.username,
+            password=args.password,
+            flexera_id=args.flexera_id,
+            group_id=args.group_id,
+            proxies=proxies,
+        ):
+            try:
+                logger.info(f'RESULT: {result}')
+            except Exception as exc:
+                logger.error(f'RESULT EXCEPTION: {exc}')
+    except Exception as exc_loop:
+        logger.error(f'MAIN ERROR: {exc_loop}')
+    print(f'EXECUTION: end')
