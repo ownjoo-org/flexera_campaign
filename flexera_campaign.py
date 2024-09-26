@@ -190,7 +190,7 @@ def get_cli_args() -> Namespace:
 
 if __name__ == '__main__':
     global logger
-    msg: str = '\n    EXECUTION: {stage} ******************************************************************************\n'
+    msg: str = '\n    EXECUTION: {stage} ****************************************************************************\n'
     args: Namespace = get_cli_args()
     configure_logging(args.log_level)
 
