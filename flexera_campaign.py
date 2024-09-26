@@ -1,7 +1,7 @@
 import http.client
 from argparse import ArgumentParser, Namespace
 from json import dumps, loads
-from logging import getLogger, WARNING
+from logging import getLogger, WARNING, DEBUG, NOTSET
 from logging.config import dictConfig
 from typing import Optional
 
@@ -18,7 +18,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def configure_logging(log_level: int = WARNING) -> None:
     global logger
-    http.client.HTTPConnection.debuglevel = 1 if log_level == 0 else 0  # 0 for off, >0 for on
+    http.client.HTTPConnection.debuglevel = DEBUG if log_level == NOTSET else NOTSET  # 0 for off, >0 for on
     dictConfig(
         {
             'version': 1,
