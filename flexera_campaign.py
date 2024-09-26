@@ -95,25 +95,9 @@ def create_retire_campaign_soap(
 ) -> xsd.CompoundValue:
     global logger
     url: str = f'{domain}/esd/ws/integration.asmx'
-    wsdl: Optional[str] = None
-    try:
-        resp_wsdl: Response = session.get(url=f'{url}?WSDL')
-        resp_wsdl.raise_for_status()
-        wsdl: str = resp_wsdl.text
-        logger.debug(f'WSDL: {wsdl}')
-    except HTTPError as http_error_wsdl:
-        msg: str = f'''WSDL ERROR: {http_error_wsdl}:
-        STATUS: {http_error_wsdl.response.status_code}
-        HEADERS: {http_error_wsdl.request.headers}
-        BODY: {http_error_wsdl.request.body}'''
-        logger.debug(msg=msg)
-        logger.exception(http_error_wsdl)
-    except Exception as exc_wsdl:
-        logger.exception(f'Error getting WSDL: type: {type(exc_wsdl)}: message: {exc_wsdl}')
-        raise exc_wsdl
 
     try:
-        client = Client(wsdl, transport=Transport(session=session))
+        client = Client(wsdl=f'{url}?WSDL', transport=Transport(session=session))
         resp_campaign: xsd.CompoundValue = client.service.AddFlexeraIdForRetireCampaign(flexera_id)
         logger.debug(f'\n\nCAMPAIGN RESPONSE: {resp_campaign}\n\n')
         return resp_campaign
