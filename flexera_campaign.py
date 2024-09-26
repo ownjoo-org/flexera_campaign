@@ -195,7 +195,7 @@ if __name__ == '__main__':
     args: Namespace = get_cli_args()
     configure_logging(args.log_level)
 
-    proxies: Optional[dict] = None
+    proxies: Optional[dict] = args.proxies or None
     if proxies:
         try:
             proxies: dict = loads(args.proxies)
