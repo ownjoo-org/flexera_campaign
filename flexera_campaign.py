@@ -123,7 +123,6 @@ def main(
 
     headers: dict = {
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
     }
     session.headers = headers
     session.proxies = proxies
