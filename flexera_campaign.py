@@ -12,7 +12,7 @@ from zeep import Client, Transport, xsd
 global logger
 
 
-def configure_logger(log_level: int = WARNING) -> None:
+def configure_logging(log_level: int = WARNING) -> None:
     global logger
     http.client.HTTPConnection.debuglevel = log_level or 0  # 0 for off, >0 for on
     dictConfig(
@@ -21,13 +21,13 @@ def configure_logger(log_level: int = WARNING) -> None:
             'disable_existing_loggers': False,
             'formatters': {
                 'default': {
-                    'format': 'MAIN: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                    'format': 'LOG_DEFAULT: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
                 },
                 'zeep': {
-                    'format': 'ZEEP: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                    'format': 'LOG_ZEEP: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
                 },
                 'urllib': {
-                    'format': 'URLLIB: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                    'format': 'LOG_URLLIB: %(asctime)s [%(levelname)s] %(name)s: %(message)s'
                 }
             },
             'handlers': {
@@ -235,16 +235,16 @@ def get_cli_args() -> Namespace:
 
 if __name__ == '__main__':
     global logger
-    msg: str = '\nEXECUTION: {stage} ******************************************************************************\n'
+    msg: str = '\n    EXECUTION: {stage} ******************************************************************************\n'
     args: Namespace = get_cli_args()
-    configure_logger(args.log_level)
+    configure_logging(args.log_level)
 
     proxies: Optional[dict] = None
     if proxies:
         try:
             proxies: dict = loads(args.proxies)
         except Exception as exc_json:
-            logger.warning(f'FAILURE PARSING PROXIES: {exc_json}: proxies provided: {proxies}')
+            logger.warning(f'    FAILURE PARSING PROXIES: {exc_json}: proxies provided: {proxies}')
 
     logger.critical(msg.format(stage='begin'))
     try:
@@ -257,9 +257,9 @@ if __name__ == '__main__':
             proxies=proxies,
         ):
             try:
-                logger.info(f'RESULT: {result}')
+                logger.info(f'    RESULT: {result}')
             except Exception as exc:
-                logger.error(f'RESULT EXCEPTION: {exc}')
+                logger.error(f'    RESULT EXCEPTION: {exc}')
     except Exception as exc_loop:
-        logger.error(f'MAIN ERROR: {exc_loop}')
+        logger.error(f'    MAIN ERROR: {exc_loop}')
     logger.critical(msg.format(stage='end'))
