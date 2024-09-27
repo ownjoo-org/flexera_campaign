@@ -217,7 +217,7 @@ if __name__ == '__main__':
             proxies=proxies,
         ):
             try:
-                logger.info(f'    RESULT: {result}')
+                print(f'    RESULT: {result}')
             except Exception as exc:
                 logger.error(f'    RESULT EXCEPTION: {exc}')
                 raise
