@@ -1,7 +1,7 @@
 import http.client
 from argparse import ArgumentParser, Namespace
 from json import dumps, loads
-from logging import DEBUG, NOTSET, WARNING, getLogger
+from logging import DEBUG, NOTSET, WARNING, getLogger, CRITICAL, ERROR, INFO
 from logging.config import dictConfig
 from typing import Optional
 
@@ -18,7 +18,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def configure_logging(log_level: int = WARNING) -> None:
     global logger
-    http.client.HTTPConnection.debuglevel = DEBUG if log_level == NOTSET else NOTSET  # 0 for off, >0 for on
+    http.client.HTTPConnection.debuglevel = DEBUG if log_level <= DEBUG else NOTSET  # 0 for off, >0 for on
     dictConfig(
         {
             'version': 1,
@@ -179,9 +179,15 @@ def get_cli_args() -> Namespace:
     )
     parser.add_argument(
         '--log_level',
-        default=50,
+        default=50,  # ERROR
         type=int,
-        help='Log level: default is 50. Greater than 0 enables some logging.  10 or more is DEBUG.',
+        help=f'Log level: default is {ERROR}.\nOptions:\n'
+             f'    CRITICAL: {CRITICAL}.\n'
+             f'    ERROR: {ERROR}.\n'
+             f'    WARNING: {WARNING}.\n'
+             f'    INFO: {INFO}.\n'
+             f'    DEBUG: {DEBUG}.\n'
+             f'    OFF: {NOTSET}.',
     )
 
     return parser.parse_args()
@@ -200,7 +206,7 @@ if __name__ == '__main__':
         except Exception as exc_json:
             logger.warning(f'    FAILURE PARSING PROXIES: {exc_json}: proxies provided: {proxies}')
 
-    logger.critical(msg.format(stage='begin'))
+    logger.debug(msg.format(stage='begin'))
     try:
         for result in main(
             domain=args.domain,
@@ -217,4 +223,4 @@ if __name__ == '__main__':
                 raise
     except Exception as exc_loop:
         logger.error(f'    MAIN ERROR: {exc_loop}')
-    logger.critical(msg.format(stage='end'))
+    logger.debug(msg.format(stage='end'))
