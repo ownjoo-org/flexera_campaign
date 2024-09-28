@@ -1,24 +1,25 @@
-import http.client
 from argparse import ArgumentParser, Namespace
 from json import dumps, loads
-from logging import DEBUG, NOTSET, WARNING, getLogger, CRITICAL, ERROR, INFO
+from logging import DEBUG, NOTSET, WARNING, getLogger, CRITICAL, ERROR, INFO, Logger
 from logging.config import dictConfig
 from typing import Optional
 
-import urllib3
 from requests import HTTPError, Response, Session
 from requests_ntlm import HttpNtlmAuth
+from urllib3 import disable_warnings
+from urllib3.connection import HTTPConnection
+from urllib3.exceptions import InsecureRequestWarning
 from zeep import Client, Transport, xsd
 
 global logger
 
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+disable_warnings(InsecureRequestWarning)
 
 
-def configure_logging(log_level: int = WARNING) -> None:
+def configure_logger(log_level: int = WARNING) -> None:
     global logger
-    http.client.HTTPConnection.debuglevel = DEBUG if log_level <= DEBUG else NOTSET  # 0 for off, >0 for on
+    HTTPConnection.debuglevel = DEBUG if log_level <= DEBUG else NOTSET  # 0 for off, >0 for on
     dictConfig(
         {
             'version': 1,
@@ -56,7 +57,6 @@ def modify_retire_campaign_rest(
         flexera_id: str = '',
         group_id: str = '',
 ) -> str:
-    global logger
     try:
         url: str = f'{domain}/esd/api/Campaigns'
         data: list = [
@@ -97,7 +97,6 @@ def create_retire_campaign_soap(
         domain: str,
         flexera_id: str = '',
 ) -> xsd.CompoundValue:
-    global logger
     url: str = f'{domain}/esd/ws/integration.asmx'
 
     try:
@@ -117,7 +116,6 @@ def main(
         group_id: str,
         proxies: Optional[dict] = None,
 ) -> list:
-    global logger
     session = Session()
     session.auth = HttpNtlmAuth(username, password)
 
@@ -194,18 +192,17 @@ def get_cli_args() -> Namespace:
 
 
 if __name__ == '__main__':
-    global logger
-    msg: str = '\n    EXECUTION: {stage} ****************************************************************************\n'
     args: Namespace = get_cli_args()
-    configure_logging(args.log_level)
+    configure_logger(args.log_level)
 
     proxies: Optional[dict] = args.proxies or None
     if proxies:
         try:
             proxies: dict = loads(args.proxies)
         except Exception as exc_json:
-            logger.warning(f'    FAILURE PARSING PROXIES: {exc_json}: proxies provided: {proxies}')
+            logger.warning(f'FAILURE PARSING PROXIES: {exc_json}: proxies provided: {proxies}')
 
+    msg: str = '\n    EXECUTION: {stage} ****************************************************************************\n'
     logger.debug(msg.format(stage='begin'))
     try:
         for result in main(
@@ -217,10 +214,10 @@ if __name__ == '__main__':
             proxies=proxies,
         ):
             try:
-                print(f'    MAIN RESULT: {result}')
+                print(f'    MAIN: RESULT: {result}')
             except Exception as exc:
-                logger.error(f'    MAIN RESULT ERROR: {exc}')
+                logger.error(f'    MAIN: RESULT: ERROR: {exc}')
                 raise
     except Exception as exc_loop:
-        logger.error(f'    MAIN ERROR: {exc_loop}')
+        logger.error(f'    MAIN: ERROR: {exc_loop}')
     logger.debug(msg.format(stage='end'))
